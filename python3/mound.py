@@ -34,7 +34,7 @@ class Mound:
 
     def link(self, sourceDID):
         if sourceDID not in self.sources:
-            self.source.append(sourceDID)
+            self.sources.append(sourceDID)
         self._writeDoc()
 
     def _writeDoc(self):

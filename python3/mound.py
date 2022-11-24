@@ -14,7 +14,7 @@ class Mound:
         Mound.MOUND_DATA_DIR = MOUND_DATA_DIR
 
     def __init__(self, program, version):
-        self.did = uuid.uuid4().hex
+        self.did = str(uuid.uuid4())
         self.program = program
         self.version = version
         self.status = -1

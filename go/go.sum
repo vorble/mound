@@ -1,0 +1,4 @@
+github.com/delaemon/go-uuidv4 v0.0.0-20150914130927-67a7d8b7f5a1 h1:+7f0x9PamA7xwl+D2VmpJeNuA2R8Tkt9ySgh9tw3kRA=
+github.com/delaemon/go-uuidv4 v0.0.0-20150914130927-67a7d8b7f5a1/go.mod h1:iPm4SxRQZmVn07+V6hpB0dONs+mzSebQwFu4cbsvT5A=
+github.com/google/uuid v1.3.0 h1:t6JiXgmwXMjEs8VusXIJk2BXHsn+wx8BZdTaoZ5fu7I=
+github.com/google/uuid v1.3.0/go.mod h1:TIyPZe4MgqvfeYDBFedMoGGpEw/LqOeaOT+nhxU+yHo=

@@ -166,11 +166,9 @@ func main() {
 		log.Fatal(err)
 	}
 
-	var b0 Blob
-	if blob, err := mound.blob(); err != nil {
+	b0, err := mound.blob()
+	if err != nil {
 		log.Fatal(err)
-	} else {
-		b0 = blob
 	}
 	if err := b0.Println("Hello, Go!"); err != nil {
 		log.Fatal(err)
@@ -179,11 +177,9 @@ func main() {
 		log.Fatal(err)
 	}
 
-	var b1 Blob
-	if blob, err := mound.blob("test"); err != nil {
+	b1, err := mound.blob("test")
+	if err != nil {
 		log.Fatal(err)
-	} else {
-		b1 = blob
 	}
 	if err := b1.Println("This is a test"); err != nil {
 		log.Fatal(err)
@@ -193,11 +189,9 @@ func main() {
 		log.Fatal(err)
 	}
 
-	var out []byte
-	if result, err := json.Marshal(mound); err != nil {
+	out, err := json.Marshal(mound)
+	if err != nil {
 		log.Fatal(err)
-	} else {
-		out = result
 	}
 	fmt.Println(string(out))
 }

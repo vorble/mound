@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"os"
 	"path"
 	"syscall"
@@ -12,8 +13,6 @@ import (
 )
 
 var MOUND_DIR string = "/tmp/mound_data"
-
-// uuidv4.Generate()
 
 type Mound struct {
 	Did     string        `json:"did"`
@@ -57,10 +56,8 @@ func makeMound(program string, version string) (Mound, error) {
 }
 
 func (mound *Mound) _writeDoc() error {
-	// TODO: I don't really understand how to use the special type for permission bits...
-	// I just put something sensical there, but I'd like to do it however the nodejs and python projects do it.
 	dir := path.Join(MOUND_DIR, mound.Did[0:2], mound.Did[2:4], mound.Did[4:6], mound.Did[6:8])
-	if err := os.MkdirAll(dir, 0o755); err != nil {
+	if err := os.MkdirAll(dir, os.ModePerm); err != nil {
 		return err
 	}
 	name := path.Join(dir, "doc")
@@ -69,7 +66,7 @@ func (mound *Mound) _writeDoc() error {
 		return err
 	}
 	data = append(data, 0x0A)
-	if err := os.WriteFile(name, data, 0o644); err != nil {
+	if err := os.WriteFile(name, data, os.ModePerm&0o666); err != nil {
 		return err
 	}
 	return nil
@@ -84,7 +81,10 @@ func (mound *Mound) close(status int) error {
 }
 
 func (mound *Mound) link(sourceDID string) error {
-	// TODO : could also ensure sourceDID is a UUID
+	// Mound only produces uuidv4 UUIDs and this Validate() ensures the version is 4.
+	if !uuidv4.Validate(sourceDID) {
+		return fmt.Errorf("sourceDID is not a UUID")
+	}
 	duplicate := false
 	for i := 0; i < len(mound.Links); i += 1 {
 		if mound.Links[i] == sourceDID {
@@ -108,7 +108,7 @@ func (mound *Mound) blob(blobName ...string) (Blob, error) {
 		name = blobName[0]
 	}
 	blobfname := path.Join(MOUND_DIR, mound.Did[0:2], mound.Did[2:4], mound.Did[4:6], mound.Did[6:8], fmt.Sprintf("%d", blobNo))
-	if err := os.WriteFile(blobfname, []byte{}, 0o644); err != nil {
+	if err := os.WriteFile(blobfname, []byte{}, os.ModePerm&0o666); err != nil {
 		return Blob{}, err
 	}
 	mound.Blobs = append(mound.Blobs, name)
@@ -121,7 +121,7 @@ func (mound *Mound) blob(blobName ...string) (Blob, error) {
 func (blob *Blob) Print(argv ...any) error {
 	blobfname := path.Join(MOUND_DIR, blob.Mound.Did[0:2], blob.Mound.Did[2:4], blob.Mound.Did[4:6], blob.Mound.Did[6:8], fmt.Sprintf("%d", blob.BlobNo))
 	text := fmt.Sprint(argv...)
-	fout, err := os.OpenFile(blobfname, syscall.O_WRONLY|syscall.O_APPEND|syscall.O_CREAT, 0o644)
+	fout, err := os.OpenFile(blobfname, syscall.O_WRONLY|syscall.O_APPEND|syscall.O_CREAT, os.ModePerm&0o666)
 	if err != nil {
 		return err
 	}
@@ -135,7 +135,7 @@ func (blob *Blob) Print(argv ...any) error {
 func (blob *Blob) Println(argv ...any) error {
 	blobfname := path.Join(MOUND_DIR, blob.Mound.Did[0:2], blob.Mound.Did[2:4], blob.Mound.Did[4:6], blob.Mound.Did[6:8], fmt.Sprintf("%d", blob.BlobNo))
 	text := fmt.Sprintln(argv...)
-	fout, err := os.OpenFile(blobfname, syscall.O_WRONLY|syscall.O_APPEND|syscall.O_CREAT, 0o644)
+	fout, err := os.OpenFile(blobfname, syscall.O_WRONLY|syscall.O_APPEND|syscall.O_CREAT, os.ModePerm&0o666)
 	if err != nil {
 		return err
 	}
@@ -149,7 +149,7 @@ func (blob *Blob) Println(argv ...any) error {
 func (blob *Blob) Printf(format string, argv ...any) error {
 	blobfname := path.Join(MOUND_DIR, blob.Mound.Did[0:2], blob.Mound.Did[2:4], blob.Mound.Did[4:6], blob.Mound.Did[6:8], fmt.Sprintf("%d", blob.BlobNo))
 	text := fmt.Sprintf(format, argv...)
-	fout, err := os.OpenFile(blobfname, syscall.O_WRONLY|syscall.O_APPEND|syscall.O_CREAT, 0o644)
+	fout, err := os.OpenFile(blobfname, syscall.O_WRONLY|syscall.O_APPEND|syscall.O_CREAT, os.ModePerm&0o666)
 	if err != nil {
 		return err
 	}
@@ -161,35 +161,43 @@ func (blob *Blob) Printf(format string, argv ...any) error {
 }
 
 func main() {
-	//moundDir := os.Getenv("MOUND_DIR")
-	//moundDir = "/home/keith/mound_data"
-	//if 0 < len(moundDir) {
-	//	setup(moundDir)
-	//}
 	mound, err := makeMound("mound-go", makeSemver(1, 0, 0))
 	if err != nil {
-		fmt.Println(err)
-		os.Exit(1)
+		log.Fatal(err)
 	}
-	b0, err1 := mound.blob()
-	if err1 != nil {
-		fmt.Println(err1)
-		os.Exit(1)
+
+	var b0 Blob
+	if blob, err := mound.blob(); err != nil {
+		log.Fatal(err)
+	} else {
+		b0 = blob
 	}
-	if err2 := b0.Println("Hello, Go!"); err2 != nil {
-		fmt.Println(err2)
-		os.Exit(1)
+	if err := b0.Println("Hello, Go!"); err != nil {
+		log.Fatal(err)
 	}
-	if err2 := b0.Println("Hello, Go!"); err2 != nil {
-		fmt.Println(err2)
-		os.Exit(1)
+	if err := b0.Println("Hello, Go!"); err != nil {
+		log.Fatal(err)
 	}
-	b1, _ := mound.blob("test")
-	b1.Println("This is a test")
-	if err2 := mound.close(0); err2 != nil {
-		fmt.Println(err2)
-		os.Exit(1)
+
+	var b1 Blob
+	if blob, err := mound.blob("test"); err != nil {
+		log.Fatal(err)
+	} else {
+		b1 = blob
 	}
-	out, _ := json.Marshal(mound)
+	if err := b1.Println("This is a test"); err != nil {
+		log.Fatal(err)
+	}
+
+	if err := mound.close(0); err != nil {
+		log.Fatal(err)
+	}
+
+	var out []byte
+	if result, err := json.Marshal(mound); err != nil {
+		log.Fatal(err)
+	} else {
+		out = result
+	}
 	fmt.Println(string(out))
 }
